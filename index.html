@@ -345,7 +345,7 @@ const fmt = (n) => n.toLocaleString('ja-JP');
  * ただし 100 万件を画面に並べると、どの端末でも固まる。並べるのは
  * MAX_ROWS まで。CSV は画面の上限と関係なく、絞り込み全件を出す。
  */
-const CHUNK = 500;       // 1 回の要求で取る数 (サーバ側の上限と同じ)
+const CHUNK = 50;       // 1 回の要求で取る数 (サーバ側の上限と同じ)
 const MAX_ROWS = 2000;  // 画面に並べる上限
 let loaded = 0;
 let loading = false;
