@@ -786,7 +786,7 @@ async function run() {
    * 送れる先 18.0s / 年商帯 15.1s)、先に投げると一覧がその後ろで待つ。
    * 一覧そのものは 0.06 秒で返るので、先に出して先に見せる。
    */
-  if (await loadChunk(mine, true)) void loadAll(mine);
+  const hasMore = await loadChunk(mine, true);
 
   fetch('/api/count?' + currentParams).then((r) => r.json()).then((data) => {
     if (mine !== generation) return;
@@ -794,6 +794,8 @@ async function run() {
     $('count').textContent = fmt(data.total);
     updateRange();
   });
+
+  if (hasMore) void loadAll(mine);
 }
 
 function schedule() {
