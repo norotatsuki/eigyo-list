@@ -346,7 +346,7 @@ const fmt = (n) => n.toLocaleString('ja-JP');
  * MAX_ROWS まで。CSV は画面の上限と関係なく、絞り込み全件を出す。
  */
 const CHUNK = 500;       // 1 回の要求で取る数 (サーバ側の上限と同じ)
-const MAX_ROWS = 20000;  // 画面に並べる上限
+const MAX_ROWS = 2000;  // 画面に並べる上限
 let loaded = 0;
 let loading = false;
 let currentParams = '';
