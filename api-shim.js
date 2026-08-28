@@ -891,12 +891,29 @@
     return "all";
   }
   var refusedFlag = (f) => f.excludeRefused ?? true ? 0 : 1;
+  function nearby(sql) {
+    const before = sql;
+    const out = sql.replace(
+      /JOIN company_profiles p ON p\.corporate_number = c\.corporate_number/g,
+      "JOIN company_profiles p ON p.id = c.id"
+    ).replace(
+      /FROM company_profiles pr\s+WHERE pr\.corporate_number = c\.corporate_number/g,
+      "FROM company_profiles pr WHERE pr.id = c.id"
+    );
+    if (/\b(p|pr)\.corporate_number = c\.corporate_number/.test(out)) {
+      throw new Error("\u7D50\u5408\u306E\u66F8\u304D\u63DB\u3048\u304C\u5F53\u305F\u3063\u3066\u3044\u307E\u305B\u3093 (query.ts \u304C\u5909\u308F\u3063\u305F\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059)");
+    }
+    if (before.includes("company_profiles") && before === out) {
+      throw new Error("\u7D50\u5408\u306E\u66F8\u304D\u63DB\u3048\u304C 1 \u3064\u3082\u5F53\u305F\u308A\u307E\u305B\u3093\u3067\u3057\u305F");
+    }
+    return out;
+  }
   async function apiSearch(q) {
     const limit = Math.min(Number(q.get("limit") ?? 50) || 50, 500);
     const offset = Math.max(Number(q.get("offset") ?? 0) || 0, 0);
     const started = Date.now();
     const built = buildSelectSql(filterFromParams(q), { ...optionsFromParams(q), limit, offset });
-    const rows = await ask(`${built.sql} LIMIT ? OFFSET ?`, [...built.params, limit, offset]);
+    const rows = await ask(nearby(`${built.sql} LIMIT ? OFFSET ?`), [...built.params, limit, offset]);
     return {
       // 実測値が無い先には推定を添える。実測か推定かは必ず区別して返す (本体と同じ)
       rows: rows.map((r) => ({ ...r, scale: scaleWithEstimates(r.capital, r.employees, r.revenue) })),
@@ -918,7 +935,7 @@
     }
     const where = buildWhere(filter, true);
     const rows = await ask(
-      `SELECT COUNT(*) AS n ${where.from} ${where.sql}`,
+      nearby(`SELECT COUNT(*) AS n ${where.from} ${where.sql}`),
       where.params
     );
     return { total: rows[0]?.n ?? 0, elapsedMs: Date.now() - started };
@@ -962,7 +979,7 @@
         return `SUM(CASE WHEN ${parts.join(" AND ")} THEN 1 ELSE 0 END) AS b${i}`;
       });
       const row = (await ask(
-        `SELECT ${cols.join(", ")} ${where.from} ${where.sql}`,
+        nearby(`SELECT ${cols.join(", ")} ${where.from} ${where.sql}`),
         where.params
       ))[0] ?? {};
       return b.bands.map((band, i) => ({ id: band.id, label: band.label, count: Number(row[`b${i}`] ?? 0) }));
@@ -986,9 +1003,9 @@
     };
     const g = group[dimension];
     const rows = await ask(
-      `SELECT ${g.key} AS slice_id, ${g.label} AS slice_label, COUNT(*) AS n
+      nearby(`SELECT ${g.key} AS slice_id, ${g.label} AS slice_label, COUNT(*) AS n
      ${where.from} ${where.sql} AND ${g.present}
-      GROUP BY ${g.key} ORDER BY n DESC LIMIT 60`,
+      GROUP BY ${g.key} ORDER BY n DESC LIMIT 60`),
       where.params
     );
     return rows.map((r) => ({ id: String(r.slice_id), label: r.slice_label, count: r.n }));
@@ -1015,7 +1032,7 @@
     while (rows.length < want) {
       const built = buildSelectSql(filter, options);
       const page = await ask(
-        `${built.sql} LIMIT ? OFFSET ?`,
+        nearby(`${built.sql} LIMIT ? OFFSET ?`),
         [...built.params, EXPORT_PAGE, rows.length]
       );
       if (page.length === 0) break;
