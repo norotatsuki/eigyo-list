@@ -1,0 +1,8 @@
+{
+  "serverMode": "chunked",
+  "requestChunkSize": 262144,
+  "databaseLengthBytes": 139108352,
+  "serverChunkSize": 47185920,
+  "urlPrefix": "eigyo.sqlite3.",
+  "suffixLength": 3
+}
